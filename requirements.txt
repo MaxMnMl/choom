@@ -1,0 +1,7 @@
+rich
+requests_file
+requests 
+jsbeautifier
+lxml
+argparse
+rich_argparse
