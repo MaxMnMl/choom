@@ -19,22 +19,27 @@ Choom is a workflow manager for web application reconnaissance. It supports seve
 
 ## Installation
 
-1. **Requirements**: Install the latest version of Go
+1. **Requirements**: Install the latest version of Go : https://go.dev/dl/
 
     ```bash
-    sudo apt-get update && sudo apt-get -y install golang-go
+    go version
     ```
 
 2. **Clone the GitHub repository**: Install dependencies and tools on your system using the installation files.
     ```bash
+    cd ~
     git clone https://github.com/maxmnml/choom.git
     cd choom
     pip3 install -r requirements.txt
     /bin/bash install.sh
     ```
-3. **(Optional)**: To use choom from anywhere, you can create a symbolic link in a directory that's in your PATH. For example:
+3. **Add binnaries to the PATH**:
     ```bash
-    sudo ln -s /full/path/to/choom.py /usr/local/bin/choom
+    export PATH=$PATH:/usr/local/go/bin:/root/go/bin/
+    ```
+4. **(Optional)**: To use choom from anywhere.
+    ```bash
+    alias choom.py="python3 $HOME/choom/src/choom.py"
     ```
 
 ## Supported Tools
