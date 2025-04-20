@@ -99,7 +99,7 @@ python3 choom.py --no-crawl --path /path/to/directory
 `-sd` This option allows Waybackurls to include subdomains of the target domain.
 
 ```bash
-python3 choom.py -u https://example.com -d 10 -cr 5 -d 2
+python3 choom.py -u https://example.com -rl 10 -cr 5 -d 2
 ```
 
 #### Headers

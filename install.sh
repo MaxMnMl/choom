@@ -34,4 +34,7 @@ go install github.com/hahwul/dalfox/v2@latest
 # Install Notify
 go install github.com/projectdiscovery/notify/cmd/notify@latest
 
+# Install Jq
+sudo apt install jq
+
 echo -e "\e[1;32mInstallation complete.\e[0m"

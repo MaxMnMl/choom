@@ -112,7 +112,7 @@ def main():
         waybackurls_options = "" if args.include_subs else "-no-subs"
 
         # Set katana/cariddi options based on user input
-        headless_options = "-hl -noi" if args.headless else ""
+        headless_options = "-hl -noi -nos" if args.headless else ""
         concurrency_options = f"-c {args.concurrency}" if args.concurrency else ""
 
         # Wayback Crawling
