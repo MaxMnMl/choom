@@ -33,7 +33,7 @@ def main():
 
     # Parse arguments
     parser = argparse.ArgumentParser(
-        description='CH00M by MaxMnMl (v0.30)',
+        description='CH00M by MaxMnMl (v0.22)',
         formatter_class=ParagraphRichHelpFormatter,
         epilog='Examples:\n\n'
            '  python3 choom.py -u https://example.com -d 5 -rl 200\n\n'
@@ -76,7 +76,7 @@ def main():
     # Display ASCII art if not in silent mode
     if not args.silent:
         print_banner(console)
-        console.print("[bold magenta]        by MaxMnMl (Version 0.30)[/bold magenta]\n")
+        console.print("[bold magenta]        by MaxMnMl (Version 0.22)[/bold magenta]\n")
 
     if args.no_crawl:
         if not args.path:
