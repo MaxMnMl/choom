@@ -161,7 +161,6 @@ def main():
                 subprocess.run(f"subfinder -silent -d {domain} -o {sub1}", shell=True, check=True)
             except KeyboardInterrupt:
                 console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
-            console.print(f"[blue]amass enum --passive -d {domain} -o {sub2}[/blue]")
             try:
                 subprocess.run(f"amass enum --passive -d {domain} -o {sub2}", shell=True, check=True)
             except KeyboardInterrupt:
