@@ -3,6 +3,7 @@ import argparse
 import time
 import os
 import argcomplete
+import pathlib
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.live import Live
@@ -32,7 +33,7 @@ def main():
 
     # Parse arguments
     parser = argparse.ArgumentParser(
-        description='CH00M by MaxMnMl (v0.21)',
+        description='CH00M by MaxMnMl (v0.30)',
         formatter_class=ParagraphRichHelpFormatter,
         epilog='Examples:\n\n'
            '  python3 choom.py -u https://example.com -d 5 -rl 200\n\n'
@@ -49,6 +50,7 @@ def main():
     parser.add_argument('-d', '--depth', type=str, default=3, help='Maximum depth to crawl (default=3).')
     parser.add_argument('-hl', '--headless', action='store_true', help='Enable headless hybrid crawling.')
     parser.add_argument('-sd', '--include-subs', action='store_true', help='Include subdomains of the target domain in the crawling process.')
+    parser.add_argument('-js', '--js-secrets', action='store_true', help='Run SecretFinder on JS files.')
     parser.add_argument('-dd', '--disco-doc', action='store_true', help='Discover interesting documents(jpg,png,pdf).')
     parser.add_argument('--no-crawl', action='store_true', help='Bypass the crawling step.')
     parser.add_argument('--path', type=str, help='If no-crawl option enabled, Path to the directory containing endpointsJs.txt and endpoints.txt.')
@@ -74,7 +76,7 @@ def main():
     # Display ASCII art if not in silent mode
     if not args.silent:
         print_banner(console)
-        console.print("[bold magenta]        by MaxMnMl (Version 0.21)[/bold magenta]\n")
+        console.print("[bold magenta]        by MaxMnMl (Version 0.30)[/bold magenta]\n")
 
     if args.no_crawl:
         if not args.path:
@@ -93,21 +95,111 @@ def main():
         new_content_dir = os.path.join('content', next_subdir)
         os.makedirs(new_content_dir)
   
-        # Collect subdomains or single URL
+        # Subdomain Enumeration
         subdomains = []
         if args.url_file:
+            console.rule("[bold bright_green]Subdomain Enumeration[/bold bright_green]")
+            alive_path = os.path.join(new_content_dir, "alive.txt")
+            subdomains_txt = os.path.join(new_content_dir, "subdomains.txt")
+            with open(args.url_file, "r") as f:
+                domains = [line.strip() for line in f if line.strip()]
+            for domain in domains:
+                console.print(f"[yellow]Enumerating subdomains for: {domain}[/yellow]")
+                sub1 = os.path.join(new_content_dir, f"sub1_{domain}.txt")
+                sub2 = os.path.join(new_content_dir, f"sub2_{domain}.txt")
+                allsub = os.path.join(new_content_dir, f"allsub_{domain}.txt")
+                # subfinder
+                console.print(f"[blue]subfinder -silent -d {domain} -o {sub1}[/blue]")
+                try:
+                    subprocess.run(f"subfinder -silent -d {domain} -o {sub1}", shell=True, check=True)
+                except KeyboardInterrupt:
+                    console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+                # assetfinder
+                console.print(f"[blue]assetfinder --subs-only {domain} | tee {sub2}[/blue]")
+                try:
+                    subprocess.run(f"assetfinder --subs-only {domain} | tee {sub2}", shell=True, check=True)
+                except KeyboardInterrupt:
+                    console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+                # Ensure each file exists (otherwise, create an empty one)
+                for f in [sub1, sub2]:
+                    if not os.path.exists(f):
+                        pathlib.Path(f).touch()
+                # merge
+                try:
+                    subprocess.run(f"cat {sub1} {sub2} > {allsub}", shell=True, check=True)
+                except KeyboardInterrupt:
+                    console.print("[red]Subdomain enumeration by user, moving to next step.[/red]")
+                os.remove(sub1)
+                os.remove(sub2)
+                # deduplicate
+                try:
+                    subprocess.run(f"cat {allsub} | anew >> {subdomains_txt}", shell=True, check=True)
+                except KeyboardInterrupt:
+                    console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+                os.remove(allsub)
+            console.print(f"\n[green]Looking for alive subdomains[/green]")
+            console.print(f"[blue]httpx -silent -l {subdomains_txt} -o {alive_path}[/blue]")
             try:
-                with open(args.url_file, 'r') as file:
-                    subdomains = file.readlines()
-            except FileNotFoundError:
-                console.print(f"[red]File not found: {args.url_file}[/red]")
-                return
+                subprocess.run(f"httpx -silent -l {subdomains_txt} -o {alive_path}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            os.remove(subdomains_txt)
+            # Use alive.txt as subdomains list
+            with open(alive_path, "r") as f:
+                subdomains = [line.strip() for line in f if line.strip()]
         elif args.url:
-            subdomains = [args.url]
+            console.rule("[bold bright_green]Subdomain Enumeration[/bold bright_green]")
+            domain = args.url.strip()
+            sub1 = os.path.join(new_content_dir, "sub1.txt")
+            sub2 = os.path.join(new_content_dir, "sub2.txt")
+            sub3 = os.path.join(new_content_dir, "sub3.txt")
+            allsub = os.path.join(new_content_dir, "allsub.txt")
+            subdomains_txt = os.path.join(new_content_dir, "subdomains.txt")
+            alive_path = os.path.join(new_content_dir, "alive.txt")
+            console.print(f"[blue]subfinder -silent -d {domain} -o {sub1}[/blue]")
+            try:
+                subprocess.run(f"subfinder -silent -d {domain} -o {sub1}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            console.print(f"[blue]amass enum --passive -d {domain} -o {sub2}[/blue]")
+            try:
+                subprocess.run(f"amass enum --passive -d {domain} -o {sub2}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            console.print(f"[blue]assetfinder --subs-only {domain} | tee {sub3}[/blue]")
+            try:
+                subprocess.run(f"assetfinder --subs-only {domain} | tee {sub3}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            # S'assurer que chaque fichier existe (sinon, le créer vide)
+            for f in [sub1, sub2, sub3]:
+                if not os.path.exists(f):
+                    pathlib.Path(f).touch()
+            try:
+                subprocess.run(f"cat {sub1} {sub2} {sub3} > {allsub}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            os.remove(sub1)
+            os.remove(sub2)
+            os.remove(sub3)
+            try:
+                subprocess.run(f"cat {allsub} | anew >> {subdomains_txt}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            os.remove(allsub)
+            console.print(f"\n[green]Looking for alive subdomains[/green]")
+            console.print(f"[blue]httpx -silent -l {subdomains_txt} -o {alive_path}[/blue]")
+            try:
+                subprocess.run(f"httpx -silent -l {subdomains_txt} -o {alive_path}", shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            os.remove(subdomains_txt)
+            with open(alive_path, "r") as f:
+                subdomains = [line.strip() for line in f if line.strip()]
         else:
             console.print("[red]You must provide either a subdomain file with -f or a single URL with -u[/red]")
             return
-
+        
         # Set waybackurls options based on user input
         waybackurls_options = "" if args.include_subs else "-no-subs"
 
@@ -128,6 +220,22 @@ def main():
 
             try:
                 subprocess.run(waybackurls_cmd, shell=True, check=True)
+            except KeyboardInterrupt:
+                console.print("[red]Crawling interrupted by user[/red]")
+
+        # Gau Crawling
+        console.rule("[bold bright_green]Gau Crawling[/bold bright_green]")
+        for subdomain in subdomains:
+            subdomain = subdomain.strip()
+            if not subdomain:
+                continue
+            console.print(f"[yellow]Processing subdomain: {subdomain}[/yellow]")
+
+            gau_cmd = f"gau {subdomain} | tee {new_content_dir}/crawl.txt"
+            console.print(f"[blue]Running command: {gau_cmd}[/blue]")
+
+            try:
+                subprocess.run(gau_cmd, shell=True, check=True)
             except KeyboardInterrupt:
                 console.print("[red]Crawling interrupted by user[/red]")
 
@@ -236,25 +344,26 @@ def main():
             subprocess.run(cleanup_cmd, shell=True, check=True)
         
     # Discover secrets in JS files
-    console.rule("[bold bright_green]Possible secrets in JS files [SecretFinder][/bold bright_green]")
-    with open(f"{new_content_dir}/result.txt", "a") as result_file:
-        result_file.write("\033[1;34m################## SECRETS IN JS FILES [SecretFinder] ###################\033[0m\n")
-        result_file.write(" \n")
-    with open(f"{new_content_dir}/endpointsJs.txt", "r") as file:
-        for url in file:
-            url = url.strip()
-            if url:
-                console.print(f"[yellow]Processing URL: {url}[/yellow]")
-                headers = ""
-                if args.cookie:
-                    headers = f"-c '{args.cookie}'"
-                secret_finder_script = os.path.join(script_dir, 'script', 'SecretFinder.py')
-                discover_cmd = f"python3 {secret_finder_script} -i {url} -o cli {headers} | tee -a {new_content_dir}/result.txt"
-                console.print(f"[blue]Running command: {discover_cmd}[/blue]")
-                try:
-                    subprocess.run(discover_cmd, shell=True, check=True, timeout=60)
-                except subprocess.TimeoutExpired:
-                    console.print(f"[red]Timeout expired for URL: {url}[/red]")
+    if args.js_secrets:
+        console.rule("[bold bright_green]Possible secrets in JS files [SecretFinder][/bold bright_green]")
+        with open(f"{new_content_dir}/resultJS.txt", "a") as result_file:
+            result_file.write("\033[1;34m################## SECRETS IN JS FILES [SecretFinder] ###################\033[0m\n")
+            result_file.write(" \n")
+        with open(f"{new_content_dir}/endpointsJs.txt", "r") as file:
+            for url in file:
+                url = url.strip()
+                if url:
+                    console.print(f"[yellow]Processing URL: {url}[/yellow]")
+                    headers = ""
+                    if args.cookie:
+                        headers = f"-c '{args.cookie}'"
+                    secret_finder_script = os.path.join(script_dir, 'script', 'SecretFinder.py')
+                    discover_cmd = f"python3 {secret_finder_script} -i {url} -o cli {headers} | tee -a {new_content_dir}/resultJS.txt"
+                    console.print(f"[blue]Running command: {discover_cmd}[/blue]")
+                    try:
+                        subprocess.run(discover_cmd, shell=True, check=True, timeout=60)
+                    except subprocess.TimeoutExpired:
+                        console.print(f"[red]Timeout expired for URL: {url}[/red]")
     
     # Discover Backup files
     console.rule("[bold bright_green]Possible backup files[/bold bright_green]")
@@ -318,65 +427,12 @@ def main():
     with console.status("[bold green]Running command...[/bold green]", spinner="dots"):
         subprocess.run(cleanup_cmd2, shell=True, check=True)
     
-    # Remove duplicate query string
+    # Remove duplicate query string with uro
     console.print("[green]Removing duplicate query string...[green]")
-    unique_urls = {}
-
-    def normalize_url(url):
-        # Parse the URL
-        parsed_url = urlparse(url)
-
-        # Extract the query parameters
-        query_params = parse_qs(parsed_url.query)
-
-        # Normalize the query parameters by keeping only the keys
-        normalized_query = {key: '' for key in query_params}
-
-        # Reconstruct the URL with normalized query parameters
-        normalized_url = urlunparse(
-            (parsed_url.scheme, parsed_url.netloc, parsed_url.path,
-            parsed_url.params, urlencode(normalized_query, doseq=True),
-            parsed_url.fragment)
-        )
-
-        return normalized_url
-
-    def unique_urls_with_most_params(file_path):
-        with open(file_path, 'r') as file:
-            urls = file.readlines()
-
-        # Dictionary to keep track of the URL with the most parameters for each normalized URL
-        unique_urls_dict = {}
-
-        for url in urls:
-            url = url.strip()
-            normalized_url = normalize_url(url)
-
-            # Parse the URL to count the number of parameters
-            parsed_url = urlparse(url)
-            num_params = len(parse_qs(parsed_url.query))
-
-            # If the normalized URL is not in the dictionary or has more parameters, update it
-            if (normalized_url not in unique_urls_dict or
-                num_params > len(parse_qs(urlparse(unique_urls_dict[normalized_url]).query))):
-                unique_urls_dict[normalized_url] = url
-
-        return unique_urls_dict.values()
-
-    # Usage
-    file_path = f"{new_content_dir}/endpoints_filtered.txt"
-    unique_urls_with_most_params_set = unique_urls_with_most_params(file_path)
-
-    # Write the unique URLs with the most parameters to a file
-    with open(f"{new_content_dir}/endpoints_param.txt", "w") as file:
-        for url in unique_urls_with_most_params_set:
-            file.write(url + "\n")
-
-    # Remove the original file
-    remove_cmd2 = f"rm {new_content_dir}/endpoints_filtered.txt"
-    subprocess.run(remove_cmd2, shell=True, check=True)
-
-
+    cleanup_cmd3 = f"cat {new_content_dir}/endpoints_filtered.txt | uro >> {new_content_dir}/endpoints_param.txt"
+    with console.status("[bold green]Running command...[/bold green]", spinner="dots"):
+        subprocess.run(cleanup_cmd3, shell=True, check=True)
+    
     # Use gf to find vulnerabilities
     console.rule(f"[bold bright_green]Possible vulnerable parameters (gf)[/bold bright_green]")
     with open(f"{new_content_dir}/result.txt", "a") as result_file:
@@ -394,6 +450,14 @@ def main():
         console.print(f"[blue]Running command: {gf_cmd}[/blue]")
         subprocess.run(gf_cmd, shell=True, check=True)
 
+    # Use kxss on XSS patterns to exploit automatically
+    console.rule(f"[bold bright_green]Exploit XSS (kxss)[/bold bright_green]")
+    kxss_cmd = f"cat {new_content_dir}/endpoints_param.txt | gf xss | kxss | tee {new_content_dir}/kxss.txt"
+    console.print(f"[blue]Running command: {kxss_cmd}[/blue]")
+    try:
+        subprocess.run(kxss_cmd, shell=True, check=True)
+    except KeyboardInterrupt:
+        console.print("[red]kxss execution interrupted by user[/red]")
     
     # Use dalfox on XSS patterns to exploit automatically
     console.rule(f"[bold bright_green]Exploit XSS (dalfox)[/bold bright_green]")

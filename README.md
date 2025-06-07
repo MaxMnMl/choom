@@ -46,13 +46,17 @@ Choom is a workflow manager for web application reconnaissance. It supports seve
 
 | Tool                                                        | Description                                                    |
 | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| [assetfinder](https://github.com/tomnomnom/assetfinder)     | Find domains and subdomains tool.                              |
 | [cariddi](https://github.com/edoardottt/cariddi)            | Fast crawler and endpoint secrets / api keys / tokens matcher. |
 | [dalfox](https://github.com/hahwul/dalfox)                  | Powerful scanner for XSS flaws.                                |
+| [gau](https://github.com/lc/gau)                            | Fetch known URLs from AlienVault's Open Threat Exchange ...    |
 | [gf](https://github.com/tomnomnom/gf)                       | A wrapper around grep to avoid typing common patterns.         |
 | [httpx](https://github.com/projectdiscovery/httpx)          | Fast and multi-purpose HTTP toolkit.                           |
 | [katana](https://github.com/projectdiscovery/katana)        | Fast and fully configurable web crawler.                       |
+| [kxss](https://github.com/Emoe/kxss)                        | Identify XSS Vulnerable Parameters / Patterns.                 |
 | [notify](https://github.com/projectdiscovery/notify)        | Send notifications to a variety of supported platforms.        |
 | [secretFinder](https://github.com/m4ll0k/SecretFinder)      | Discover sensitive data in JavaScript files.                   |
+| [subfinder](https://github.com/projectdiscovery/subfinder)  | Fast passive subdomain enumeration tool.                       |
 | [virustotalx](https://github.com/orwagodfather/virustotalx) | Offline crawler using Virustotal API.                          |
 | [waybackurls](https://github.com/tomnomnom/waybackurls)     | Offline crawler using Web Archive.                             |
 
@@ -74,11 +78,11 @@ During the execution of the workflow, using the `Ctrl-C` command allows you to s
 # Display help
 python3 choom.py -h
 
-# Run a single URL workflow
-python3 choom.py -u https://example.com
+# Run a single domain workflow
+python3 choom.py -u example.com
 
 # Run workflow with a list input
-python3 choom.py -f urls.txt
+python3 choom.py -f domains.txt
 
 # If you want to use your own list of endpoints, you can bypass the crawling process by indicating the directory where your files are located. (Files must be renamed "endpoint.txt" and "endpointJs.txt")
 python3 choom.py --no-crawl --path /path/to/directory
@@ -131,6 +135,8 @@ python3 choom.py -u https://example.com -p "http://127.0.0.1:8080"
 #### Filtering
 
 `-dd`: By default, JPG, PNG, and PDF extensions are not included in the endpoints displayed in the results. This option enables filtering of these results, which can be useful for financial targets.
+
+`-js`: Run SecretFinder script on JS files to discover sensitive data like API keys, access tokens, authorizations, JWTs, and more.
 
 #### Skip Crawling
 

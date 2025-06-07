@@ -13,6 +13,21 @@ else
     echo -e "\e[1;32mGo is already installed.\e[0m"
 fi
 
+# install subfinder
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+
+# Install assetfinder
+go install github.com/tomnomnom/assetfinder@latest
+
+# Install anew
+go install github.com/tomnomnom/anew@latest
+
+# Install gau
+go install github.com/lc/gau/v2/cmd/gau@latest
+
+# Install kxss
+go install github.com/Emoe/kxss@latest
+
 # Install waybackurls
 go install github.com/tomnomnom/waybackurls@latest
 
@@ -33,6 +48,9 @@ go install github.com/hahwul/dalfox/v2@latest
 
 # Install Notify
 go install github.com/projectdiscovery/notify/cmd/notify@latest
+
+# Install uro
+pipx install uro
 
 # Install Jq
 sudo apt install jq
