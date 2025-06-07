@@ -152,7 +152,6 @@ def main():
             domain = args.url.strip()
             sub1 = os.path.join(new_content_dir, "sub1.txt")
             sub2 = os.path.join(new_content_dir, "sub2.txt")
-            sub3 = os.path.join(new_content_dir, "sub3.txt")
             allsub = os.path.join(new_content_dir, "allsub.txt")
             subdomains_txt = os.path.join(new_content_dir, "subdomains.txt")
             alive_path = os.path.join(new_content_dir, "alive.txt")
@@ -161,26 +160,21 @@ def main():
                 subprocess.run(f"subfinder -silent -d {domain} -o {sub1}", shell=True, check=True)
             except KeyboardInterrupt:
                 console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
+            console.print(f"[blue]assetfinder --subs-only {domain} | tee {sub2}[/blue]")
             try:
-                subprocess.run(f"amass enum --passive -d {domain} -o {sub2}", shell=True, check=True)
-            except KeyboardInterrupt:
-                console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
-            console.print(f"[blue]assetfinder --subs-only {domain} | tee {sub3}[/blue]")
-            try:
-                subprocess.run(f"assetfinder --subs-only {domain} | tee {sub3}", shell=True, check=True)
+                subprocess.run(f"assetfinder --subs-only {domain} | tee {sub2}", shell=True, check=True)
             except KeyboardInterrupt:
                 console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
             # S'assurer que chaque fichier existe (sinon, le créer vide)
-            for f in [sub1, sub2, sub3]:
+            for f in [sub1, sub2]:
                 if not os.path.exists(f):
                     pathlib.Path(f).touch()
             try:
-                subprocess.run(f"cat {sub1} {sub2} {sub3} > {allsub}", shell=True, check=True)
+                subprocess.run(f"cat {sub1} {sub2} > {allsub}", shell=True, check=True)
             except KeyboardInterrupt:
                 console.print("[red]Subdomain enumeration interrupted by user, moving to next step.[/red]")
             os.remove(sub1)
             os.remove(sub2)
-            os.remove(sub3)
             try:
                 subprocess.run(f"cat {allsub} | anew >> {subdomains_txt}", shell=True, check=True)
             except KeyboardInterrupt:
